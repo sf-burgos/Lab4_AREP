@@ -10,6 +10,10 @@ import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -36,7 +40,7 @@ public class HttpServer {
         if (System.getenv("Port")!= null){
             return Integer.parseInt(System.getenv("PORT"));
         }
-        return 1437;
+        return 1537;
     }
 
 
@@ -121,9 +125,57 @@ public class HttpServer {
 
     }
 
-    private void createResponse(Request req, PrintWriter printWriter, OutputStream outputStream)  throws InvocationTargetException, IllegalAccessException {
-    //implementar cuando se atore el code :V
+    private void createResponse(Request req, PrintWriter printWriter, OutputStream outputStream) throws InvocationTargetException, IllegalAccessException, IOException {
+        String outputLine = testResponse();
+        URI theuri = req.getTheuri();
+        if (theuri.getPath().startsWith("/Apps")) {
+            getAppResponse(theuri.getPath().substring(5), outputStream);
+        } else {
+            getStaticResource(theuri.getPath(), outputStream);
+        }
+        outputStream.close();
     }
+
+    private void getAppResponse(String substring, OutputStream outputStream) {
+    }
+
+    private void getStaticResource(String path, OutputStream out) {
+        Path file = Paths.get("target/classes/public_html" + path);
+        try (InputStream in = Files.newInputStream(file);
+             BufferedReader reader
+                     = new BufferedReader(new InputStreamReader(in))) {
+            String header = "HTTP/1.1 200 OK\r\n"
+                    + "Content-Type: text/html\r\n"
+                    + "\r\n";
+            out.write(Integer.parseInt(header));
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                out.write(Integer.parseInt(line));
+                System.out.println(line);
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(HttpServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private String testResponse() {
+        String outputLine = "HTTP/1.1 200 OK\r\n"
+                + "Content-Type: text/html\r\n"
+                + "\r\n"
+                + "<!DOCTYPE html>\n"
+                + "<html>\n"
+                + "<head>\n"
+                + "<meta charset=\"UTF-8\">\n"
+                + "<title>Title of the document</title>\n"
+                + "</head>\n"
+                + "<body>\n"
+                + "<h1>Mi propio mensaje</h1>\n"
+                + "</body>\n"
+                + "</html>\n";
+        return outputLine;
+    }
+        
+
 
     private String[] createEntry(String inputLine) {
         return inputLine.split(":");
